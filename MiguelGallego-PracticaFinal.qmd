@@ -66,7 +66,7 @@ Miremos el código postal. Es una variable con entradas erroneas. Hay valores co
 
 ```{r}
 length(airbnb$CodigoPostal[is.na(airbnb$CodigoPostal)])
-# airbnb$CodigoPostal <- as.character(airbnb$CodigoPostal)
+
 str(airbnb$CodigoPostal)
 airbnb$CodigoPostal <- ifelse(!startsWith(airbnb$CodigoPostal, "28"), NA, airbnb$CodigoPostal)
 airbnb$CodigoPostal <- ifelse(airbnb$CodigoPostal=="28", NA, airbnb$CodigoPostal)
@@ -80,21 +80,16 @@ airbnb$CodigoPostal <- ifelse(grepl("28002", airbnb$CodigoPostal), "28002", airb
 airbnb$CodigoPostal <- ifelse(grepl("28004", airbnb$CodigoPostal), "28004", airbnb$CodigoPostal)
 airbnb$CodigoPostal <- ifelse(grepl("28051", airbnb$CodigoPostal), "28051", airbnb$CodigoPostal)
 
-# airbnb$CodigoPostal[grepl("28002", airbnb$CodigoPostal)]
-# airbnb$CodigoPostal[grepl("28004", airbnb$CodigoPostal)]
-# airbnb$CodigoPostal[grepl("28051", airbnb$CodigoPostal)]
 ```
 
 El codigo 2804 debería ser 28004, 2805 deberia ser 28005 y 2815 juncto con 2815 debería ser 28015
 
 ```{r}
-# subset(airbnb, nchar(CodigoPostal)<5)$CodigoPostal
-
 airbnb$CodigoPostal[airbnb$CodigoPostal=="2804"] <- "28004"
 airbnb$CodigoPostal[airbnb$CodigoPostal=="2805"] <- "28005"
 airbnb$CodigoPostal[airbnb$CodigoPostal=="2815"] <- "28015"
 
-# subset(airbnb, nchar(CodigoPostal)>5)$CodigoPostal
+
 
 airbnb$CodigoPostal[airbnb$CodigoPostal=="280013"] <- "28013"
 ```
@@ -326,7 +321,7 @@ Una vez que hayamos filtrado los datos correspondientes calcular el valor o la c
 ```{r}
 library(GGally)
 options(repr.plot.height=4,repr.plot.width=6)
-ggpairs(na.omit(barrio_sol[,corr_variables_sol]),
+ggpairs(na.omit(barrio_sol[,c("NumBanyos", "NumDormitorios", "MaxOcupantes", "MetrosCuadrados", "Precio")]),
        #lower = list(continuous = wrap("density", alpha = 0.8,size=0.2,color='blue'))
        lower = list(continuous = wrap("points", alpha = 0.3,size=0.1,color='blue'))
        )
@@ -334,8 +329,44 @@ ggpairs(na.omit(barrio_sol[,corr_variables_sol]),
 
 ¿Que variable es más fiable para conocer el precio de un inmueble, el número de habitaciones o los metros cuadrados?
 
+```{r}
+model<-lm(data=barrio_sol, formula = Precio ~ NumBanyos+NumDormitorios+MaxOcupantes+MetrosCuadrados)
+summary(model)
+```
+
+```{r}
+# La variable más representativa para conocer el precio del inmuble es sin duda el numero de habitaciones.
+
+model<-lm(data=barrio_sol, formula = Precio ~ NumDormitorios)
+confint(model)
+```
+
 Responde con su correspondiente margen de error del 95%, ¿cuantos euros incrementa el precio del alquiler por cada metro cuadrado extra del piso?
+
+```{r}
+# El precio del alquiler aumenta 1.28€ por cada metro cuadrados extra de la vivienda.
+
+confint(lm(data=barrio_sol, formula = Precio ~ MetrosCuadrados))
+```
 
 Responde con su correspondiente margen de error del 95%, ¿cuantos euros incrementa el precio del alquiler por cada habitación?
 
-¿Cual es la probabilidad de encontrar, en el barrio de Sol, un apartamento en alquiler con 3 dormitorios? ¿Cual es el intervalo de confianza de esa probabilidad?
+```{r}
+# El precio del alquiler aumenta 52.28€ por cada habitación extra de la vivienda.
+
+confint(lm(data=barrio_sol, formula = Precio ~ NumDormitorios))
+```
+
+¿Cual es la probabilidad de encontrar, en el barrio de Sol, un apartamento en alquiler con 3 dormitorios?
+
+¿Cual es el intervalo de confianza de esa probabilidad?
+
+```{r}
+# La probabilidad de encontrar una vivienda en sol con 3 dormitorios es del 9.68%. El intervalo de confianza está entre el 2.04% y el 25.75%.  El intervalo de confianza es alto.
+
+n_apartamentos_3dormitorios <- sum(barrio_sol$NumDormitorios == 3)
+binom.test(n_apartamentos_3dormitorios, length(barrio_sol$NumDormitorios), p = 0.5, alternative = "two.sided")
+
+
+
+```
